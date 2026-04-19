@@ -1,0 +1,21 @@
+{
+  "name": "archstudio",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --parallel --filter './packages/*' dev",
+    "build": "pnpm --filter './packages/*' build",
+    "lint": "pnpm --filter './packages/*' lint",
+    "type-check": "pnpm --filter './packages/*' type-check"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

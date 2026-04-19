@@ -1,0 +1,377 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  principal
+  senior_architect
+  architect
+  designer
+  intern
+  admin
+}
+
+enum ProjectType {
+  residential
+  commercial
+  institutional
+  interior
+  mixed_use
+}
+
+enum ProjectPhase {
+  pre_design
+  schematic_design
+  design_development
+  construction_documents
+  bidding
+  construction_administration
+}
+
+enum ProjectStatus {
+  active
+  on_hold
+  completed
+}
+
+enum Priority {
+  high
+  medium
+  low
+}
+
+enum InvoiceStatus {
+  draft
+  sent
+  paid
+  overdue
+}
+
+enum PipelineStage {
+  initial_contact
+  consultation
+  proposal_sent
+  shortlisted
+  won
+  lost
+}
+
+enum FeeStructure {
+  percentage_of_construction
+  hourly_rate
+  fixed_fee
+  stipulated
+}
+
+enum EstimateStatus {
+  draft
+  sent
+  accepted
+  rejected
+}
+
+enum EventType {
+  meeting
+  site_visit
+  deadline
+  standup
+  consultation
+}
+
+enum LeadChannel {
+  instagram
+  website
+  referral
+  google_ads
+}
+
+enum AuditAction {
+  create
+  update
+  delete
+  view
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(architect)
+  phone        String?
+  hourlyRate   Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  projectMemberships ProjectMember[]
+  timeEntries        TimeEntry[]
+  calendarAttendees  CalendarEventAttendee[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+
+  @@map("users")
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?
+  phone     String?
+  company   String?
+  address   String?
+  city      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  projects        Project[]
+  invoices        Invoice[]
+  marketingLeads  MarketingLead[]
+
+  @@map("clients")
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  name        String
+  clientId    String
+  type        ProjectType
+  phase       ProjectPhase  @default(pre_design)
+  status      ProjectStatus @default(active)
+  priority    Priority      @default(medium)
+  progress    Int           @default(0)
+  budget      Decimal       @db.Decimal(12, 2)
+  address     String?
+  description String?
+  startDate   DateTime
+  dueDate     DateTime
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  client      Client          @relation(fields: [clientId], references: [id])
+  members     ProjectMember[]
+  invoices    Invoice[]
+  estimates   Estimate[]
+  timeEntries TimeEntry[]
+  calendarEvents CalendarEvent[]
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+model PipelineOpportunity {
+  id             String        @id @default(uuid())
+  name           String
+  contactName    String
+  contactEmail   String
+  contactPhone   String?
+  estimatedValue Decimal       @db.Decimal(12, 2)
+  probability    Int           @default(50)
+  stage          PipelineStage @default(initial_contact)
+  projectType    String?
+  source         String?
+  nextAction     String?
+  nextActionDate DateTime?
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  estimates Estimate[]
+  leads     MarketingLead[]
+
+  @@map("pipeline_opportunities")
+}
+
+model Invoice {
+  id        String        @id @default(uuid())
+  number    String        @unique
+  projectId String
+  clientId  String
+  status    InvoiceStatus @default(draft)
+  subtotal  Decimal       @db.Decimal(12, 2)
+  tax       Decimal       @db.Decimal(12, 2) @default(0)
+  total     Decimal       @db.Decimal(12, 2)
+  issueDate DateTime      @default(now())
+  dueDate   DateTime
+  paidDate  DateTime?
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // Relations
+  project   Project          @relation(fields: [projectId], references: [id])
+  client    Client           @relation(fields: [clientId], references: [id])
+  lineItems InvoiceLineItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  description String
+  quantity    Float
+  unitPrice   Decimal @db.Decimal(10, 2)
+  amount      Decimal @db.Decimal(12, 2)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_line_items")
+}
+
+model Estimate {
+  id             String         @id @default(uuid())
+  name           String
+  opportunityId  String?
+  projectId      String?
+  clientName     String
+  feeStructure   FeeStructure
+  estimatedFee   Decimal        @db.Decimal(12, 2)
+  status         EstimateStatus @default(draft)
+  notes          String?
+  expiresAt      DateTime
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  // Relations
+  opportunity   PipelineOpportunity? @relation(fields: [opportunityId], references: [id])
+  project       Project?             @relation(fields: [projectId], references: [id])
+  hourBreakdown EstimateHourBreakdown[]
+
+  @@map("estimates")
+}
+
+model EstimateHourBreakdown {
+  id         String  @id @default(uuid())
+  estimateId String
+  phase      String
+  hours      Float
+  rate       Decimal @db.Decimal(8, 2)
+  amount     Decimal @db.Decimal(12, 2)
+
+  estimate Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+
+  @@map("estimate_hour_breakdown")
+}
+
+model TimeEntry {
+  id          String   @id @default(uuid())
+  userId      String
+  projectId   String
+  date        DateTime @db.Date
+  hours       Float
+  description String?
+  billable    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("time_entries")
+}
+
+model CalendarEvent {
+  id        String    @id @default(uuid())
+  title     String
+  type      EventType
+  projectId String?
+  startTime String
+  endTime   String
+  date      DateTime  @db.Date
+  location  String?
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  project   Project?                @relation(fields: [projectId], references: [id])
+  attendees CalendarEventAttendee[]
+
+  @@map("calendar_events")
+}
+
+model CalendarEventAttendee {
+  id      String @id @default(uuid())
+  eventId String
+  userId  String
+
+  event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@map("calendar_event_attendees")
+}
+
+model MarketingLead {
+  id             String      @id @default(uuid())
+  name           String
+  email          String?
+  phone          String?
+  channel        LeadChannel
+  estimatedValue Decimal?    @db.Decimal(12, 2)
+  notes          String?
+  clientId       String?
+  opportunityId  String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  client      Client?              @relation(fields: [clientId], references: [id])
+  opportunity PipelineOpportunity? @relation(fields: [opportunityId], references: [id])
+
+  @@map("marketing_leads")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String    @default("info")
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  userId     String?
+  action     AuditAction
+  entityType String
+  entityId   String
+  oldValues  Json?
+  newValues  Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_log")
+}

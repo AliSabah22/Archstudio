@@ -1,8 +1,8 @@
-
 import { Routes, Route } from 'react-router-dom'
 import { AppShell } from '@/design-system/layouts/AppShell'
 import { DashboardView } from '@/features/dashboard/DashboardView'
 import { ProjectsView } from '@/features/projects/ProjectsView'
+import { ClientsView } from '@/features/clients/ClientsView'
 import { PipelineView } from '@/features/pipeline/PipelineView'
 import { TeamView } from '@/features/team/TeamView'
 import { InvoicesView } from '@/features/invoices/InvoicesView'
@@ -16,6 +16,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<DashboardView />} />
         <Route path="/projects" element={<ProjectsView />} />
+        <Route path="/clients" element={<ClientsView />} />
         <Route path="/pipeline" element={<PipelineView />} />
         <Route path="/team" element={<TeamView />} />
         <Route path="/invoices" element={<InvoicesView />} />

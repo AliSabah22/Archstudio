@@ -9,11 +9,14 @@ export interface TeamMember {
   phone: string
   hourlyRate: number
   utilization: number
+  trailingUtilization: number
+  weeklyHoursLogged: number
   billableHoursThisMonth: number
   totalHoursThisMonth: number
   activeProjectCount: number
   activeProjectIds: string[]
   joinedAt: string
+  weeklyHours?: number[]
 }
 
 export interface UtilizationData {

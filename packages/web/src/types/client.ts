@@ -10,3 +10,19 @@ export interface Client {
   totalBilled: number
   createdAt: string
 }
+
+export interface ClientReferral {
+  name: string
+  value: number
+}
+
+export interface ClientRecord {
+  id: string
+  name: string
+  type: 'Residential' | 'Commercial' | 'Hospitality'
+  projects: string[]
+  totalRevenue: number
+  referrals: ClientReferral[]
+  lastInteraction: string
+  status: 'active' | 'recent' | 'dormant'
+}

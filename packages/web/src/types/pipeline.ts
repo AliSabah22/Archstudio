@@ -16,4 +16,16 @@ export interface PipelineOpportunity {
   notes: string
   createdAt: string
   updatedAt: string
+  daysInCurrentStage: number
+  referredBy?: string
+}
+
+export interface ClosedOpportunity {
+  id: string
+  name: string
+  result: 'won' | 'lost'
+  value: number
+  lossReason?: string
+  proposalHours: number
+  closedAt: string
 }

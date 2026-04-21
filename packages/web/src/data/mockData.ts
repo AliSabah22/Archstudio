@@ -1265,3 +1265,695 @@ export const MARKETING_SUMMARY = {
   totalCostThisMonth: 5500,
   avgCAC: 550,
 }
+
+// ─── Meetings & Decisions (Feature 1) ─────────────────────────────────────────
+
+export interface MeetingDecision {
+  id: number
+  text: string
+  category: 'Materials' | 'Design' | 'Technical' | 'Financial' | 'Schedule'
+}
+
+export interface MeetingActionItem {
+  id: number
+  owner: string
+  task: string
+  dueDate: string
+  status: 'pending' | 'in_progress' | 'completed'
+}
+
+export interface Meeting {
+  id: number
+  projectId: string
+  projectName: string
+  date: string
+  time: string
+  type: 'Client Review' | 'Internal Team' | 'Consultant Coordination' | 'Site Visit'
+  attendees: { internal: string[]; external: string[] }
+  topics: string[]
+  decisions: MeetingDecision[]
+  actionItems: MeetingActionItem[]
+  notes: string
+  durationMinutes: number
+}
+
+export const MEETINGS: Meeting[] = [
+  {
+    id: 1,
+    projectId: 'proj_001',
+    projectName: 'Mehta Residence',
+    date: '2026-03-15',
+    time: '14:00',
+    type: 'Client Review',
+    attendees: {
+      internal: ['PD', 'SL', 'YT'],
+      external: ['Mr. Mehta (Client)', 'Mrs. Mehta (Client)'],
+    },
+    topics: [
+      'Material selection for exterior cladding',
+      'Window placement on east facade',
+      'Kitchen layout options',
+    ],
+    decisions: [
+      { id: 1, text: 'Approved brick cladding over metal panel alternative. Client selected warm red-brown tone from samples provided.', category: 'Materials' },
+      { id: 2, text: 'Kitchen layout Option B approved — island with seating for 4, walk-in pantry added to north wall.', category: 'Design' },
+    ],
+    actionItems: [
+      { id: 1, owner: 'SL', task: 'Update material specifications with selected brick product', dueDate: '2026-03-22', status: 'completed' },
+      { id: 2, owner: 'YT', task: 'Revise kitchen drawings to reflect Option B', dueDate: '2026-03-25', status: 'completed' },
+      { id: 3, owner: 'PD', task: 'Request client signature on approval document', dueDate: '2026-03-20', status: 'completed' },
+    ],
+    notes: 'Meeting went well. Mehtas are enthusiastic about the design direction. Confirmed timeline to start construction by August.',
+    durationMinutes: 90,
+  },
+  {
+    id: 2,
+    projectId: 'proj_001',
+    projectName: 'Mehta Residence',
+    date: '2026-04-02',
+    time: '10:00',
+    type: 'Consultant Coordination',
+    attendees: {
+      internal: ['PD', 'SL'],
+      external: ['Chen Structural (Lead Engineer)', 'North Structural (Partner)'],
+    },
+    topics: [
+      'Foundation waterproofing approach',
+      'Structural implications of skylight additions',
+      'MEP coordination for kitchen island',
+    ],
+    decisions: [
+      { id: 1, text: 'Skylight locations confirmed — structural will provide additional steel framing at 3 locations.', category: 'Technical' },
+    ],
+    actionItems: [
+      { id: 1, owner: 'North Structural', task: 'Provide revised structural drawings with skylight framing', dueDate: '2026-04-15', status: 'pending' },
+      { id: 2, owner: 'SL', task: 'Coordinate foundation waterproofing detail with structural', dueDate: '2026-04-10', status: 'in_progress' },
+    ],
+    notes: 'Foundation waterproofing detail at south elevation still needs confirmation — RFI sent to North Structural.',
+    durationMinutes: 60,
+  },
+  {
+    id: 3,
+    projectId: 'proj_001',
+    projectName: 'Mehta Residence',
+    date: '2026-04-10',
+    time: '09:00',
+    type: 'Internal Team',
+    attendees: {
+      internal: ['PD', 'SL', 'YT', 'CW'],
+      external: [],
+    },
+    topics: [
+      'DD package review before client presentation',
+      'Budget status — SD phase overrun',
+      'Change order #2 discussion (third design option)',
+    ],
+    decisions: [
+      { id: 1, text: 'Change order #2 (third design option — contemporary aesthetic) to be presented to Mehtas on Apr 24. Fee: $2,800.', category: 'Financial' },
+      { id: 2, text: 'DD package to be completed by Apr 22. Presentation scheduled Apr 24.', category: 'Schedule' },
+    ],
+    actionItems: [
+      { id: 1, owner: 'CW', task: 'Complete 3D renders for DD presentation', dueDate: '2026-04-22', status: 'in_progress' },
+      { id: 2, owner: 'PD', task: 'Prepare change order document for client review', dueDate: '2026-04-20', status: 'pending' },
+    ],
+    notes: 'SD phase ran 107% over budget (150h vs 140h estimated). Addressed by limiting DD revisions to 2 rounds.',
+    durationMinutes: 45,
+  },
+  {
+    id: 4,
+    projectId: 'proj_002',
+    projectName: 'Chen Commercial Complex',
+    date: '2026-04-05',
+    time: '11:00',
+    type: 'Client Review',
+    attendees: {
+      internal: ['PD', 'MO'],
+      external: ['James Chen (Owner)', 'Bridgewater PM'],
+    },
+    topics: [
+      'CD phase progress review',
+      'LEED Gold documentation status',
+      'Rooftop amenity finalization',
+    ],
+    decisions: [
+      { id: 1, text: 'Rooftop amenity redesign approved as per change order #2. Green roof expanded from 2,000 to 2,800 sq ft.', category: 'Design' },
+      { id: 2, text: 'Target CD submission to city by June 1, 2026.', category: 'Schedule' },
+    ],
+    actionItems: [
+      { id: 1, owner: 'MO', task: 'Update rooftop drawings with expanded green roof', dueDate: '2026-04-18', status: 'completed' },
+      { id: 2, owner: 'AD', task: 'Coordinate LEED Gold documentation package', dueDate: '2026-05-01', status: 'in_progress' },
+    ],
+    notes: 'Client satisfied with progress. MEP pass-through of $7,200 flagged — needs to be included in next invoice.',
+    durationMinutes: 75,
+  },
+  {
+    id: 5,
+    projectId: 'proj_003',
+    projectName: 'Thornton Community Library',
+    date: '2026-04-08',
+    time: '18:00',
+    type: 'Client Review',
+    attendees: {
+      internal: ['YT', 'PS'],
+      external: ['City Librarian', 'Community Board Rep (3 attendees)'],
+    },
+    topics: [
+      'Schematic design options A, B, C review',
+      'Makerspace programming requirements',
+      'Public plaza design feedback',
+    ],
+    decisions: [
+      { id: 1, text: 'Option B selected — linear bar building with public plaza on south side. Makerspace to face street.', category: 'Design' },
+      { id: 2, text: 'Bicycle parking expanded from 20 to 40 spaces per community request.', category: 'Design' },
+    ],
+    actionItems: [
+      { id: 1, owner: 'YT', task: 'Develop Option B into full schematic package', dueDate: '2026-04-30', status: 'in_progress' },
+      { id: 2, owner: 'PS', task: 'Prepare updated presentation boards', dueDate: '2026-04-28', status: 'pending' },
+    ],
+    notes: 'Very positive community response. Option B chosen unanimously. Sustainability features (green roof, solar) well received.',
+    durationMinutes: 120,
+  },
+]
+
+// ─── RFIs & Submittals (Feature 7) ────────────────────────────────────────────
+
+export interface RFIThread {
+  author: string
+  date: string
+  message: string
+}
+
+export interface RFI {
+  id: number
+  projectId: string
+  projectName: string
+  subject: string
+  sentTo: string
+  sentBy: string
+  sentDate: string
+  expectedResponseDate: string
+  actualResponseDate: string | null
+  status: 'awaiting_response' | 'answered' | 'resolved' | 'overdue'
+  priority: 'high' | 'medium' | 'low'
+  thread: RFIThread[]
+}
+
+export interface Submittal {
+  id: number
+  projectId: string
+  projectName: string
+  item: string
+  submittedBy: string
+  submittedDate: string
+  status: 'pending' | 'approved' | 'rejected' | 'revise_and_resubmit'
+  reviewedBy: string | null
+  reviewDate: string | null
+  comments: string
+}
+
+export const RFIS: RFI[] = [
+  {
+    id: 1,
+    projectId: 'proj_001',
+    projectName: 'Mehta Residence',
+    subject: 'Foundation waterproofing detail at south elevation',
+    sentTo: 'North Structural',
+    sentBy: 'SL',
+    sentDate: '2026-04-03',
+    expectedResponseDate: '2026-04-10',
+    actualResponseDate: null,
+    status: 'overdue',
+    priority: 'high',
+    thread: [
+      { author: 'SL', date: '2026-04-03', message: 'Please confirm the waterproofing detail at grid line 4, south elevation. Current detail shows membrane only — do we need drainage board given the grading? Grading slopes toward building at 2% from south property line.' },
+    ],
+  },
+  {
+    id: 2,
+    projectId: 'proj_001',
+    projectName: 'Mehta Residence',
+    subject: 'Steel beam sizing at skylight opening — grid 7',
+    sentTo: 'North Structural',
+    sentBy: 'YT',
+    sentDate: '2026-04-08',
+    expectedResponseDate: '2026-04-18',
+    actualResponseDate: '2026-04-16',
+    status: 'answered',
+    priority: 'medium',
+    thread: [
+      { author: 'YT', date: '2026-04-08', message: 'Please confirm beam sizing for skylight opening at grid line 7. Our drawing shows W200x36 but the span has increased to 5.4m.' },
+      { author: 'North Structural', date: '2026-04-16', message: 'Confirmed: upgrade to W250x45 required for 5.4m span. We will issue revised structural drawings by Apr 18.' },
+    ],
+  },
+  {
+    id: 3,
+    projectId: 'proj_002',
+    projectName: 'Chen Commercial Complex',
+    subject: 'MEP routing conflict — Level 3 mechanical room',
+    sentTo: 'MEP Associates',
+    sentBy: 'MO',
+    sentDate: '2026-04-12',
+    expectedResponseDate: '2026-04-19',
+    actualResponseDate: null,
+    status: 'awaiting_response',
+    priority: 'medium',
+    thread: [
+      { author: 'MO', date: '2026-04-12', message: 'Structural beam at grid C-3 conflicts with MEP duct routing shown on M-201. Please revise routing or confirm if beam can be penetrated. See attached coordination drawing.' },
+    ],
+  },
+  {
+    id: 4,
+    projectId: 'proj_002',
+    projectName: 'Chen Commercial Complex',
+    subject: 'LEED documentation — materials credits section',
+    sentTo: 'MEP Associates',
+    sentBy: 'AD',
+    sentDate: '2026-03-28',
+    expectedResponseDate: '2026-04-05',
+    actualResponseDate: '2026-04-04',
+    status: 'resolved',
+    priority: 'low',
+    thread: [
+      { author: 'AD', date: '2026-03-28', message: 'Requesting LEED materials credit documentation for all mechanical equipment specified on project.' },
+      { author: 'MEP Associates', date: '2026-04-04', message: 'All documentation attached. All specified equipment qualifies for MR credits as requested.' },
+    ],
+  },
+]
+
+export const SUBMITTALS: Submittal[] = [
+  {
+    id: 1,
+    projectId: 'proj_001',
+    projectName: 'Mehta Residence',
+    item: 'Brick sample — warm red-brown (Acme Brick #AR-442)',
+    submittedBy: 'Client via SL',
+    submittedDate: '2026-03-20',
+    status: 'approved',
+    reviewedBy: 'SL',
+    reviewDate: '2026-03-22',
+    comments: 'Approved as submitted. Matches client direction from Mar 15 meeting.',
+  },
+  {
+    id: 2,
+    projectId: 'proj_001',
+    projectName: 'Mehta Residence',
+    item: 'Kitchen island countertop — Caesarstone Statuario',
+    submittedBy: 'Client',
+    submittedDate: '2026-04-01',
+    status: 'pending',
+    reviewedBy: null,
+    reviewDate: null,
+    comments: '',
+  },
+  {
+    id: 3,
+    projectId: 'proj_002',
+    projectName: 'Chen Commercial Complex',
+    item: 'Curtain wall system — Kawneer 1600 System',
+    submittedBy: 'Glazing Contractor',
+    submittedDate: '2026-04-08',
+    status: 'revise_and_resubmit',
+    reviewedBy: 'MO',
+    reviewDate: '2026-04-14',
+    comments: 'Thermal break not compliant with energy model. Resubmit with Kawneer 1600UT or equivalent.',
+  },
+  {
+    id: 4,
+    projectId: 'proj_002',
+    projectName: 'Chen Commercial Complex',
+    item: 'Green roof assembly — ZinCo Floraset FS 50',
+    submittedBy: 'Roofing Contractor',
+    submittedDate: '2026-04-10',
+    status: 'approved',
+    reviewedBy: 'AD',
+    reviewDate: '2026-04-15',
+    comments: 'Approved. Meets LEED SS credit requirements.',
+  },
+]
+
+// ─── Documents (Feature 8) ────────────────────────────────────────────────────
+
+export interface DocumentRevision {
+  version: number
+  uploadedBy: string
+  uploadedDate: string
+  fileName: string
+  note: string
+  current: boolean
+}
+
+export interface ProjectDocument {
+  id: number
+  projectId: string
+  projectName: string
+  title: string
+  type: 'Drawing Set' | 'Specification' | 'Contract' | 'Correspondence' | 'Report' | 'Other'
+  revisions: DocumentRevision[]
+  tags: string[]
+  sharedWithClient: boolean
+}
+
+export const DOCUMENTS: ProjectDocument[] = [
+  {
+    id: 1,
+    projectId: 'proj_001',
+    projectName: 'Mehta Residence',
+    title: 'Schematic Design — Floor Plans',
+    type: 'Drawing Set',
+    revisions: [
+      { version: 1, uploadedBy: 'SL', uploadedDate: '2026-02-10', fileName: 'mehta_SD_floorplans_v1.pdf', note: 'Initial schematic', current: false },
+      { version: 2, uploadedBy: 'SL', uploadedDate: '2026-02-28', fileName: 'mehta_SD_floorplans_v2.pdf', note: 'Revised per client feedback Feb 24', current: false },
+      { version: 3, uploadedBy: 'SL', uploadedDate: '2026-03-18', fileName: 'mehta_SD_floorplans_v3.pdf', note: 'Final SD — kitchen layout Option B incorporated', current: true },
+    ],
+    tags: ['Schematic Design', 'Floor Plans'],
+    sharedWithClient: true,
+  },
+  {
+    id: 2,
+    projectId: 'proj_001',
+    projectName: 'Mehta Residence',
+    title: 'Design Development — Exterior Elevations',
+    type: 'Drawing Set',
+    revisions: [
+      { version: 1, uploadedBy: 'YT', uploadedDate: '2026-03-28', fileName: 'mehta_DD_elevations_v1.pdf', note: 'Draft DD elevations with brick cladding', current: false },
+      { version: 2, uploadedBy: 'YT', uploadedDate: '2026-04-12', fileName: 'mehta_DD_elevations_v2.pdf', note: 'Updated window placement per Mar 15 decision', current: true },
+    ],
+    tags: ['Design Development', 'Elevations'],
+    sharedWithClient: true,
+  },
+  {
+    id: 3,
+    projectId: 'proj_001',
+    projectName: 'Mehta Residence',
+    title: 'Owner-Architect Agreement',
+    type: 'Contract',
+    revisions: [
+      { version: 1, uploadedBy: 'PD', uploadedDate: '2025-10-20', fileName: 'mehta_OAA_signed.pdf', note: 'Executed contract — fixed fee $285,000', current: true },
+    ],
+    tags: ['Contract', 'Legal'],
+    sharedWithClient: false,
+  },
+  {
+    id: 4,
+    projectId: 'proj_002',
+    projectName: 'Chen Commercial Complex',
+    title: 'Construction Documents — Site Plan',
+    type: 'Drawing Set',
+    revisions: [
+      { version: 1, uploadedBy: 'MO', uploadedDate: '2026-03-01', fileName: 'chen_CD_siteplan_v1.pdf', note: 'Initial CD site plan for city review', current: false },
+      { version: 2, uploadedBy: 'AD', uploadedDate: '2026-03-25', fileName: 'chen_CD_siteplan_v2.pdf', note: 'Updated setbacks per planning comments', current: false },
+      { version: 3, uploadedBy: 'MO', uploadedDate: '2026-04-10', fileName: 'chen_CD_siteplan_v3.pdf', note: 'Final — rooftop amenity expansion incorporated', current: true },
+    ],
+    tags: ['Construction Documents', 'Site Plan'],
+    sharedWithClient: true,
+  },
+]
+
+// ─── Approvals (Feature 6) ────────────────────────────────────────────────────
+
+export interface Approval {
+  id: number
+  projectId: string
+  projectName: string
+  title: string
+  description: string
+  requestedBy: string
+  requestedDate: string
+  respondedDate: string | null
+  responseBy: string | null
+  status: 'pending' | 'approved' | 'changes_requested' | 'approved_with_conditions'
+  comments: string
+  relatedDecisionId: number | null
+}
+
+export const APPROVALS: Approval[] = [
+  {
+    id: 1,
+    projectId: 'proj_001',
+    projectName: 'Mehta Residence',
+    title: 'Schematic Design Package — Client Approval',
+    description: 'Complete SD package including floor plans (Option B), site plan, exterior elevations, and preliminary material board.',
+    requestedBy: 'PD',
+    requestedDate: '2026-03-18',
+    respondedDate: '2026-03-22',
+    responseBy: 'Mr. Mehta',
+    status: 'approved_with_conditions',
+    comments: 'Approved with one condition: confirm window sizes on east facade can accommodate future motorized blinds. PD to verify with supplier.',
+    relatedDecisionId: 2,
+  },
+  {
+    id: 2,
+    projectId: 'proj_001',
+    projectName: 'Mehta Residence',
+    title: 'Change Order #2 — Third Design Option',
+    description: 'Additional fee of $2,800 for exploration of contemporary aesthetic alternative (Change Order #2). Scope: 16 hours of design work.',
+    requestedBy: 'PD',
+    requestedDate: '2026-04-15',
+    respondedDate: null,
+    responseBy: null,
+    status: 'pending',
+    comments: '',
+    relatedDecisionId: null,
+  },
+  {
+    id: 3,
+    projectId: 'proj_002',
+    projectName: 'Chen Commercial Complex',
+    title: 'Rooftop Amenity Redesign — Change Order #2',
+    description: 'Expanded green roof from 2,000 to 2,800 sq ft. Additional structural and MEP coordination required. Fee: $7,000.',
+    requestedBy: 'PD',
+    requestedDate: '2026-01-15',
+    respondedDate: '2026-01-20',
+    responseBy: 'James Chen',
+    status: 'approved',
+    comments: 'Approved. Proceed immediately.',
+    relatedDecisionId: null,
+  },
+]
+
+// ─── Capacity Forecast (Feature 4) ────────────────────────────────────────────
+
+export interface CapacityWeek {
+  weekStart: string
+  plannedHours: number
+  capacityHours: number
+  utilization: number
+  projects: string[]
+}
+
+export interface MemberCapacity {
+  userId: string
+  userName: string
+  initials: string
+  weeks: CapacityWeek[]
+}
+
+const makeWeeks = (
+  startDates: string[],
+  utils: number[],
+  projectSets: string[][],
+): CapacityWeek[] =>
+  startDates.map((weekStart, i) => {
+    const u = utils[i]
+    const planned = Math.round((u / 100) * 40)
+    return { weekStart, plannedHours: planned, capacityHours: 40, utilization: u, projects: projectSets[i] ?? [] }
+  })
+
+const WEEK_STARTS = [
+  '2026-04-21', '2026-04-28', '2026-05-05', '2026-05-12',
+  '2026-05-19', '2026-05-26', '2026-06-02', '2026-06-09',
+  '2026-06-16', '2026-06-23',
+]
+
+export const CAPACITY_FORECAST: MemberCapacity[] = [
+  {
+    userId: 'tm_001', userName: 'Pamir Dogan', initials: 'PD',
+    weeks: makeWeeks(WEEK_STARTS,
+      [82, 80, 78, 75, 70, 65, 62, 60, 58, 55],
+      [
+        ['Mehta Residence', 'Chen Complex'],
+        ['Mehta Residence', 'Chen Complex'],
+        ['Chen Complex', 'Forest Hill'],
+        ['Chen Complex', 'Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+      ]),
+  },
+  {
+    userId: 'tm_002', userName: 'Sara Levi', initials: 'SL',
+    weeks: makeWeeks(WEEK_STARTS,
+      [105, 108, 102, 96, 90, 88, 82, 80, 76, 72],
+      [
+        ['Mehta Residence', 'Forest Hill'],
+        ['Mehta Residence', 'Forest Hill'],
+        ['Mehta Residence', 'Forest Hill'],
+        ['Mehta Residence', 'Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+      ]),
+  },
+  {
+    userId: 'tm_003', userName: 'Marcus Osei', initials: 'MO',
+    weeks: makeWeeks(WEEK_STARTS,
+      [78, 80, 82, 80, 78, 76, 75, 73, 70, 68],
+      [
+        ['Chen Complex', 'Lakeside Penthouse'],
+        ['Chen Complex', 'Lakeside Penthouse'],
+        ['Chen Complex'],
+        ['Chen Complex'],
+        ['Chen Complex', 'Forest Hill'],
+        ['Chen Complex', 'Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+      ]),
+  },
+  {
+    userId: 'tm_004', userName: 'Yuki Tanaka', initials: 'YT',
+    weeks: makeWeeks(WEEK_STARTS,
+      [85, 83, 80, 78, 75, 73, 70, 68, 65, 62],
+      [
+        ['Mehta Residence', 'Library'],
+        ['Mehta Residence', 'Library'],
+        ['Library', 'Forest Hill'],
+        ['Library', 'Forest Hill'],
+        ['Library', 'Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+      ]),
+  },
+  {
+    userId: 'tm_005', userName: 'Amara Diallo', initials: 'AD',
+    weeks: makeWeeks(WEEK_STARTS,
+      [72, 70, 68, 65, 63, 60, 58, 55, 52, 50],
+      [
+        ['Chen Complex', 'Harbourfront Bistro'],
+        ['Chen Complex', 'Harbourfront Bistro'],
+        ['Chen Complex'],
+        ['Chen Complex'],
+        ['Chen Complex'],
+        ['Chen Complex'],
+        ['Chen Complex'],
+        ['Chen Complex'],
+        ['Chen Complex'],
+        ['Chen Complex'],
+      ]),
+  },
+  {
+    userId: 'tm_006', userName: 'Chen Wei', initials: 'CW',
+    weeks: makeWeeks(WEEK_STARTS,
+      [88, 85, 82, 80, 78, 75, 72, 70, 68, 65],
+      [
+        ['Mehta Residence', 'Chen Complex'],
+        ['Mehta Residence', 'Chen Complex'],
+        ['Chen Complex', 'Forest Hill'],
+        ['Chen Complex', 'Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+      ]),
+  },
+  {
+    userId: 'tm_007', userName: 'Priya Sharma', initials: 'PS',
+    weeks: makeWeeks(WEEK_STARTS,
+      [65, 62, 60, 58, 55, 52, 50, 48, 45, 45],
+      [
+        ['Library', 'Harbourfront Bistro'],
+        ['Library', 'Harbourfront Bistro'],
+        ['Library'],
+        ['Library'],
+        ['Library'],
+        ['Library'],
+        ['Library'],
+        ['Library'],
+        ['Library'],
+        ['Library'],
+      ]),
+  },
+  {
+    userId: 'tm_008', userName: 'James Okonkwo', initials: 'JO',
+    weeks: makeWeeks(WEEK_STARTS,
+      [60, 62, 65, 68, 70, 68, 65, 62, 60, 58],
+      [
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+        ['Forest Hill'],
+      ]),
+  },
+]
+
+// ─── Billing Schedules (Feature 3) ───────────────────────────────────────────
+
+export interface PhaseFee {
+  phase: string
+  percentage: number
+  fee: number
+  status: 'invoiced' | 'partial' | 'upcoming' | 'draft'
+  billedToDate?: number
+  invoiceId?: string
+}
+
+export interface BillingSchedule {
+  projectId: string
+  autoDraftEnabled: boolean
+  triggerThreshold: number
+  totalFee: number
+  billedToDate: number
+  remainingToBill: number
+  phaseFees: PhaseFee[]
+}
+
+export const BILLING_SCHEDULES: BillingSchedule[] = [
+  {
+    projectId: 'proj_001',
+    autoDraftEnabled: true,
+    triggerThreshold: 90,
+    totalFee: 285000,
+    billedToDate: 171000,
+    remainingToBill: 114000,
+    phaseFees: [
+      { phase: 'Pre-Design', percentage: 5, fee: 14250, status: 'invoiced', invoiceId: 'INV-2026-001' },
+      { phase: 'Schematic Design', percentage: 20, fee: 57000, status: 'invoiced', invoiceId: 'INV-2026-007', billedToDate: 57000 },
+      { phase: 'Design Development', percentage: 25, fee: 71250, status: 'partial', billedToDate: 42750, invoiceId: 'INV-2026-007' },
+      { phase: 'Construction Documents', percentage: 35, fee: 99750, status: 'upcoming' },
+      { phase: 'Construction Administration', percentage: 15, fee: 42750, status: 'upcoming' },
+    ],
+  },
+  {
+    projectId: 'proj_002',
+    autoDraftEnabled: true,
+    triggerThreshold: 90,
+    totalFee: 1200000,
+    billedToDate: 920000,
+    remainingToBill: 280000,
+    phaseFees: [
+      { phase: 'Pre-Design', percentage: 5, fee: 60000, status: 'invoiced' },
+      { phase: 'Schematic Design', percentage: 15, fee: 180000, status: 'invoiced', invoiceId: 'INV-2026-009' },
+      { phase: 'Design Development', percentage: 20, fee: 240000, status: 'invoiced', invoiceId: 'INV-2026-002' },
+      { phase: 'Construction Documents', percentage: 40, fee: 480000, status: 'partial', billedToDate: 440000, invoiceId: 'INV-2026-004' },
+      { phase: 'Construction Administration', percentage: 20, fee: 240000, status: 'upcoming' },
+    ],
+  },
+]

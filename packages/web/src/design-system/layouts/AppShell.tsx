@@ -11,6 +11,9 @@ import {
   UserCircle2,
   Timer,
   X,
+  BarChart3,
+  Settings,
+  Activity,
 } from 'lucide-react'
 import { SidebarItem } from '../components/SidebarItem'
 import { Avatar } from '../components/Avatar'
@@ -26,10 +29,13 @@ const NAV_ITEMS = [
   { to: '/clients', icon: <UserCircle2 className="w-4 h-4" />, label: 'Clients' },
   { to: '/pipeline', icon: <TrendingUp className="w-4 h-4" />, label: 'Pipeline' },
   { to: '/team', icon: <Users className="w-4 h-4" />, label: 'Team' },
+  { to: '/capacity', icon: <Activity className="w-4 h-4" />, label: 'Capacity' },
   { to: '/invoices', icon: <FileText className="w-4 h-4" />, label: 'Invoices', badgeCount: 3 },
+  { to: '/financials', icon: <BarChart3 className="w-4 h-4" />, label: 'Financials' },
   { to: '/estimates', icon: <Calculator className="w-4 h-4" />, label: 'Estimates' },
   { to: '/calendar', icon: <Calendar className="w-4 h-4" />, label: 'Calendar' },
   { to: '/marketing', icon: <Megaphone className="w-4 h-4" />, label: 'Marketing' },
+  { to: '/settings', icon: <Settings className="w-4 h-4" />, label: 'Settings' },
 ]
 
 function formatElapsed(ms: number): string {

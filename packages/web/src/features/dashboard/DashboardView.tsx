@@ -8,7 +8,7 @@ import { useProjects } from '@/hooks/useProjects'
 import { useTeam } from '@/hooks/useTeam'
 import { useInvoices } from '@/hooks/useInvoices'
 import { InvoiceStatus } from '@/types/common'
-import { PROJECTS, TEAM_MEMBERS, INVOICES, TIME_ENTRIES, CLIENTS, PIPELINE_OPPORTUNITIES, STAGE_VELOCITY, CLOSED_OPPORTUNITIES } from '@/data/mockData'
+import { PROJECTS, TEAM_MEMBERS, INVOICES, TIME_ENTRIES, CLIENTS, PIPELINE_OPPORTUNITIES, STAGE_VELOCITY, CLOSED_OPPORTUNITIES, MEETINGS, RFIS, APPROVALS, CAPACITY_FORECAST } from '@/data/mockData'
 
 const TODAY = new Date('2026-04-20')
 
@@ -377,7 +377,131 @@ export function DashboardView() {
         </div>
       </div>
 
-      {/* Row 4 — Top Clients + Pipeline Health */}
+      {/* Row 4 — V3 Operational Alerts */}
+      <div className="grid grid-cols-4 gap-4 mb-4">
+
+        {/* Action Items Due */}
+        {(() => {
+          const allActions = MEETINGS.flatMap((m) =>
+            m.actionItems
+              .filter((a) => a.status !== 'completed')
+              .map((a) => ({ ...a, projectName: m.projectName, meetingDate: m.date }))
+          ).sort((x, y) => x.dueDate.localeCompare(y.dueDate))
+          const overdueActions = allActions.filter((a) => a.dueDate < '2026-04-20')
+          return (
+            <div className="rounded-card border bg-surface p-4" style={{ borderColor: overdueActions.length > 0 ? 'rgba(239,68,68,0.3)' : '#1E1E20' }}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-text-primary">Action Items Due</h3>
+                <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: overdueActions.length > 0 ? 'rgba(239,68,68,0.15)' : '#1E1E20', color: overdueActions.length > 0 ? '#EF4444' : '#8A8A8E' }}>{allActions.length}</span>
+              </div>
+              {allActions.slice(0, 4).map((a, i) => {
+                const isOverdue = a.dueDate < '2026-04-20'
+                const isSoon = !isOverdue && a.dueDate <= '2026-04-23'
+                return (
+                  <div key={i} className="mb-2 last:mb-0">
+                    <div className="flex items-start justify-between gap-1">
+                      <span className="text-xs text-text-secondary leading-tight truncate">{a.task}</span>
+                      <span className="text-xs font-medium shrink-0 ml-1" style={{ color: isOverdue ? '#EF4444' : isSoon ? '#F59E0B' : '#8A8A8E' }}>
+                        {isOverdue ? 'Overdue' : new Date(a.dueDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                    <div className="text-xs text-text-muted">{a.owner} · {a.projectName}</div>
+                  </div>
+                )
+              })}
+              {allActions.length === 0 && <p className="text-xs text-text-muted">No pending action items.</p>}
+            </div>
+          )
+        })()}
+
+        {/* RFIs Overdue */}
+        {(() => {
+          const overdueRFIs = RFIS.filter((r) => r.status === 'overdue')
+          const awaitingRFIs = RFIS.filter((r) => r.status === 'awaiting_response')
+          return (
+            <div className="rounded-card border bg-surface p-4" style={{ borderColor: overdueRFIs.length > 0 ? 'rgba(239,68,68,0.3)' : '#1E1E20' }}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-text-primary">RFIs</h3>
+                {overdueRFIs.length > 0 && <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444' }}>{overdueRFIs.length} overdue</span>}
+              </div>
+              {overdueRFIs.map((r) => (
+                <div key={r.id} className="mb-2 last:mb-0">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span style={{ color: '#EF4444', fontSize: 10 }}>⚠</span>
+                    <span className="text-xs font-medium text-text-primary truncate">{r.sentTo}</span>
+                  </div>
+                  <div className="text-xs text-text-muted truncate">{r.subject}</div>
+                </div>
+              ))}
+              {awaitingRFIs.slice(0, 2).map((r) => (
+                <div key={r.id} className="mb-2 last:mb-0">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span style={{ color: '#F59E0B', fontSize: 10 }}>⏳</span>
+                    <span className="text-xs text-text-secondary truncate">{r.sentTo}</span>
+                  </div>
+                  <div className="text-xs text-text-muted">Due {new Date(r.expectedResponseDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}</div>
+                </div>
+              ))}
+              {overdueRFIs.length === 0 && awaitingRFIs.length === 0 && <p className="text-xs text-text-muted">All RFIs responded.</p>}
+            </div>
+          )
+        })()}
+
+        {/* Approvals Pending */}
+        {(() => {
+          const pending = APPROVALS.filter((a) => a.status === 'pending')
+          return (
+            <div className="rounded-card border bg-surface p-4" style={{ borderColor: pending.length > 0 ? 'rgba(245,158,11,0.3)' : '#1E1E20' }}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-text-primary">Approvals Pending</h3>
+                <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: pending.length > 0 ? 'rgba(245,158,11,0.15)' : '#1E1E20', color: pending.length > 0 ? '#F59E0B' : '#8A8A8E' }}>{pending.length}</span>
+              </div>
+              {pending.map((a) => (
+                <div key={a.id} className="mb-2 last:mb-0">
+                  <div className="text-xs font-medium text-text-primary leading-tight mb-0.5">{a.title}</div>
+                  <div className="text-xs text-text-muted">{a.projectName} · {new Date(a.requestedDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}</div>
+                </div>
+              ))}
+              {pending.length === 0 && <p className="text-xs text-text-muted">No approvals awaiting response.</p>}
+            </div>
+          )
+        })()}
+
+        {/* Capacity Alert */}
+        {(() => {
+          const overloaded = CAPACITY_FORECAST.filter((m) => m.weeks.slice(0, 3).some((w) => w.utilization > 100))
+          const underutil = CAPACITY_FORECAST.filter((m) => m.weeks.every((w) => w.utilization < 65))
+          return (
+            <div className="rounded-card border bg-surface p-4" style={{ borderColor: overloaded.length > 0 ? 'rgba(239,68,68,0.3)' : '#1E1E20' }}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-text-primary">Capacity Forecast</h3>
+                <a href="/capacity" className="text-xs text-gold hover:underline">Heatmap</a>
+              </div>
+              {overloaded.map((m) => (
+                <div key={m.userId} className="mb-2 last:mb-0">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span style={{ color: '#EF4444', fontSize: 10 }}>⚠</span>
+                    <span className="text-xs font-medium text-text-primary">{m.userName.split(' ')[0]} overloaded</span>
+                  </div>
+                  <div className="text-xs text-text-muted">Next 3 weeks — peak {Math.max(...m.weeks.slice(0, 3).map((w) => w.utilization))}%</div>
+                </div>
+              ))}
+              {underutil.slice(0, 1).map((m) => (
+                <div key={m.userId} className="mb-2 last:mb-0">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span style={{ color: '#3B82F6', fontSize: 10 }}>ℹ</span>
+                    <span className="text-xs text-text-secondary">{m.userName.split(' ')[0]} has capacity</span>
+                  </div>
+                  <div className="text-xs text-text-muted">Consistently under 65% — assign new work</div>
+                </div>
+              ))}
+              {overloaded.length === 0 && <p className="text-xs" style={{ color: '#22C55E' }}>✓ Team capacity looks healthy</p>}
+            </div>
+          )
+        })()}
+      </div>
+
+      {/* Row 5 — Top Clients + Pipeline Health */}
       <div className="grid grid-cols-2 gap-4">
 
         {/* Top Clients by LTV */}

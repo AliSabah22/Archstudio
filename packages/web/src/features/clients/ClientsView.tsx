@@ -1,8 +1,19 @@
 import { useState } from 'react'
 import { PageHeader } from '@/design-system/layouts/PageHeader'
 import { Badge } from '@/design-system/components/Badge'
-import { CLIENTS, PROJECTS } from '@/data/mockData'
+import { ProgressBar } from '@/design-system/components/ProgressBar'
+import { CLIENTS, PROJECTS, BILLING_SCHEDULES, MEETINGS, DOCUMENTS, APPROVALS } from '@/data/mockData'
 import type { ClientRecord } from '@/types/client'
+import { ProjectPhase } from '@/types/common'
+
+const PHASE_LABELS: Record<ProjectPhase, string> = {
+  [ProjectPhase.PreDesign]: 'Pre-Design',
+  [ProjectPhase.SchematicDesign]: 'Schematic Design',
+  [ProjectPhase.DesignDevelopment]: 'Design Development',
+  [ProjectPhase.ConstructionDocuments]: 'Construction Documents',
+  [ProjectPhase.Bidding]: 'Bidding / Tendering',
+  [ProjectPhase.ConstructionAdministration]: 'Construction Administration',
+}
 
 function formatCurrency(value: number): string {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`
@@ -33,7 +44,161 @@ const TYPE_CONFIG: Record<string, { color: string; bg: string }> = {
   Hospitality: { color: '#A855F7', bg: 'rgba(168,85,247,0.12)' },
 }
 
-function ClientCard({ client }: { client: ClientRecord }) {
+function ClientPortalPreviewModal({ client, onClose }: { client: ClientRecord; onClose: () => void }) {
+  const project = PROJECTS.find((p) => client.projects.includes(p.id))
+  const billing = project ? BILLING_SCHEDULES.find((s) => s.projectId === project.id) : null
+  const projectMeetings = project ? MEETINGS.filter((m) => m.projectId === project.id) : []
+  const recentDecisions = projectMeetings.flatMap((m) => m.decisions).slice(0, 4)
+  const sharedDocs = project ? DOCUMENTS.filter((d) => d.projectId === project.id && d.sharedWithClient) : []
+  const pendingApprovals = project ? APPROVALS.filter((a) => a.projectId === project.id && a.status === 'pending') : []
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.75)' }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-lg mx-4 rounded-card border border-border bg-surface overflow-y-auto"
+        style={{ maxHeight: '88vh' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border" style={{ background: 'rgba(200,169,126,0.05)' }}>
+          <div>
+            <div className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: '#C8A97E', letterSpacing: '0.12em' }}>
+              ◈ Client Portal Preview
+            </div>
+            <div className="text-xs text-text-muted">What {client.name} sees when they log in</div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-text-muted hover:text-text-primary transition-colors text-lg leading-none"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="font-serif text-lg text-text-primary">Hello, {client.name}</div>
+
+          {project ? (
+            <>
+              {/* Project Progress */}
+              <div className="rounded-card border border-border bg-bg p-4">
+                <div className="text-xs text-text-muted uppercase tracking-wider mb-3">Your Project</div>
+                <div className="text-sm font-semibold text-text-primary mb-3">{project.name}</div>
+                <div className="flex items-center justify-between text-xs text-text-muted mb-1.5">
+                  <span>Overall Progress</span>
+                  <span className="font-mono font-semibold text-text-primary">{project.progress}%</span>
+                </div>
+                <ProgressBar value={project.progress} height={6} color="#C8A97E" />
+                <div className="flex items-center gap-3 mt-3 text-xs text-text-muted">
+                  <span>Currently: <span className="text-text-secondary">{PHASE_LABELS[project.phase]}</span></span>
+                </div>
+              </div>
+
+              {/* Fee Tracker */}
+              {billing && (
+                <div className="rounded-card border border-border bg-bg p-4">
+                  <div className="text-xs text-text-muted uppercase tracking-wider mb-3">Fee Tracker</div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-text-muted">Total Contract Fee</span>
+                    <span className="text-sm font-mono font-semibold text-text-primary">{formatCurrency(billing.totalFee)}</span>
+                  </div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs text-text-muted">Billed to Date ({Math.round((billing.billedToDate / billing.totalFee) * 100)}%)</span>
+                    <span className="text-sm font-mono font-semibold text-gold">{formatCurrency(billing.billedToDate)}</span>
+                  </div>
+                  <ProgressBar value={Math.round((billing.billedToDate / billing.totalFee) * 100)} height={5} color="#C8A97E" />
+                  <div className="flex items-center justify-between mt-2 text-xs text-text-muted">
+                    <span>Remaining to bill</span>
+                    <span className="font-mono">{formatCurrency(billing.remainingToBill)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Pending Approvals */}
+              <div className="rounded-card border border-border bg-bg p-4">
+                <div className="text-xs text-text-muted uppercase tracking-wider mb-3">Pending Your Approval</div>
+                {pendingApprovals.length === 0 ? (
+                  <div className="flex items-center gap-2 text-xs" style={{ color: '#22C55E' }}>
+                    <span>✓</span>
+                    <span>Nothing to approve right now.</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {pendingApprovals.map((a) => (
+                      <div key={a.id} className="flex items-start gap-2 p-2.5 rounded" style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                        <span className="text-xs shrink-0 mt-0.5" style={{ color: '#F59E0B' }}>⏳</span>
+                        <div>
+                          <div className="text-xs font-medium text-text-primary">{a.title}</div>
+                          <div className="text-xs text-text-muted mt-0.5">Requested {new Date(a.requestedDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Decisions */}
+              {recentDecisions.length > 0 && (
+                <div className="rounded-card border border-border bg-bg p-4">
+                  <div className="text-xs text-text-muted uppercase tracking-wider mb-3">Recent Decisions</div>
+                  <div className="flex flex-col gap-2">
+                    {recentDecisions.map((d, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className="text-xs shrink-0 mt-0.5" style={{ color: '#22C55E' }}>✓</span>
+                        <span className="text-xs text-text-secondary leading-relaxed">{d.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Shared Documents */}
+              {sharedDocs.length > 0 && (
+                <div className="rounded-card border border-border bg-bg p-4">
+                  <div className="text-xs text-text-muted uppercase tracking-wider mb-3">Shared Documents</div>
+                  <div className="flex flex-col gap-0">
+                    {sharedDocs.map((doc) => {
+                      const current = doc.revisions.find((r) => r.current)
+                      return (
+                        <div key={doc.id} className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">📄</span>
+                            <span className="text-xs text-text-secondary">{doc.title} <span className="text-text-muted">(v{current?.version})</span></span>
+                          </div>
+                          <span className="text-xs text-text-muted">
+                            {current ? new Date(current.uploadedDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) : ''}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-xs text-text-muted text-center py-8">No active projects to display.</div>
+          )}
+
+          <div className="flex justify-end pt-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-button text-sm font-medium transition-colors"
+              style={{ background: 'rgba(200,169,126,0.15)', border: '1px solid rgba(200,169,126,0.3)', color: '#C8A97E' }}
+            >
+              Close Preview
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ClientCard({ client, onPortalPreview }: { client: ClientRecord; onPortalPreview: (clientId: string) => void }) {
   const [expanded, setExpanded] = useState(false)
   const status = STATUS_CONFIG[client.status]
   const typeConfig = TYPE_CONFIG[client.type] ?? TYPE_CONFIG.Commercial
@@ -154,13 +319,22 @@ function ClientCard({ client }: { client: ClientRecord }) {
           </div>
         )}
 
-        {/* Expand for detail toggle */}
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="w-full mt-3 text-xs text-text-muted hover:text-gold transition-colors text-center"
-        >
-          {expanded ? 'Show less ▲' : 'Show more ▼'}
-        </button>
+        {/* Action buttons */}
+        <div className="flex items-center justify-between mt-3">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs text-text-muted hover:text-gold transition-colors"
+          >
+            {expanded ? 'Show less ▲' : 'Show more ▼'}
+          </button>
+          <button
+            onClick={() => onPortalPreview(client.id)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-button text-xs font-medium transition-colors"
+            style={{ background: 'rgba(200,169,126,0.1)', border: '1px solid rgba(200,169,126,0.25)', color: '#C8A97E' }}
+          >
+            Client Portal Preview →
+          </button>
+        </div>
 
         {expanded && (
           <div className="mt-3 pt-3 border-t border-border">
@@ -192,6 +366,9 @@ function ClientCard({ client }: { client: ClientRecord }) {
 
 export function ClientsView() {
   const [filter, setFilter] = useState<'all' | 'active' | 'dormant'>('all')
+  const [portalClientId, setPortalClientId] = useState<string | null>(null)
+
+  const portalClient = portalClientId ? CLIENTS.find((c) => c.id === portalClientId) ?? null : null
 
   const sorted = [...CLIENTS]
     .sort((a, b) => ltvFor(b) - ltvFor(a))
@@ -265,9 +442,14 @@ export function ClientsView() {
       {/* Client List */}
       <div className="flex flex-col gap-4">
         {sorted.map((client) => (
-          <ClientCard key={client.id} client={client} />
+          <ClientCard key={client.id} client={client} onPortalPreview={setPortalClientId} />
         ))}
       </div>
+
+      {/* Client Portal Preview Modal */}
+      {portalClient && (
+        <ClientPortalPreviewModal client={portalClient} onClose={() => setPortalClientId(null)} />
+      )}
     </div>
   )
 }

@@ -206,6 +206,8 @@ export const PROJECTS: Project[] = [
         { id: 1, description: 'Heritage facade review — additional documentation required', hours: 24, cost: 4200, status: 'approved', date: '2026-01-20' },
         { id: 2, description: 'Third design option — contemporary aesthetic', hours: 16, cost: 2800, status: 'pending', date: '2026-03-10' },
       ],
+      meetingsEstimated: 9,
+      meetingsActual: 14,
     },
     consultants: [
       { name: 'North Structural', specialty: 'Structural', budgeted: 28000, spent: 18500, markup: 10, passedThrough: 16500, pendingPassThrough: 2000 },
@@ -577,18 +579,18 @@ export const PIPELINE_OPPORTUNITIES: PipelineOpportunity[] = [
 // ─── Closed Opportunities ─────────────────────────────────────────────────────
 
 export const CLOSED_OPPORTUNITIES: ClosedOpportunity[] = [
-  { id: 'closed_001', name: 'Etobicoke Clinic', result: 'lost', value: 320000, lossReason: 'Fee too high', proposalHours: 35, closedAt: '2025-11-15' },
-  { id: 'closed_002', name: 'Bloor St Retail Fitout', result: 'won', value: 195000, proposalHours: 28, closedAt: '2025-09-20' },
-  { id: 'closed_003', name: 'Mississauga Elementary School', result: 'lost', value: 850000, lossReason: 'Competitor selected', proposalHours: 42, closedAt: '2025-12-10' },
-  { id: 'closed_004', name: 'High Park Residence', result: 'won', value: 275000, proposalHours: 18, closedAt: '2025-10-08' },
-  { id: 'closed_005', name: 'King West Condo Lobby', result: 'won', value: 180000, proposalHours: 22, closedAt: '2026-01-14' },
-  { id: 'closed_006', name: 'Scarborough Office Park', result: 'lost', value: 420000, lossReason: 'Fee too high', proposalHours: 38, closedAt: '2026-02-20' },
-  { id: 'closed_007', name: 'Danforth Duplex Conversion', result: 'won', value: 155000, proposalHours: 14, closedAt: '2026-03-01' },
-  { id: 'closed_008', name: 'North York Community Hub', result: 'lost', value: 680000, lossReason: 'No budget approved', proposalHours: 28, closedAt: '2026-01-30' },
-  { id: 'closed_009', name: 'Liberty Village Cafe', result: 'won', value: 140000, proposalHours: 16, closedAt: '2025-08-22' },
-  { id: 'closed_010', name: 'Corktown Townhouse', result: 'won', value: 220000, proposalHours: 20, closedAt: '2025-07-15' },
-  { id: 'closed_011', name: 'Midtown Health Clinic', result: 'won', value: 290000, proposalHours: 24, closedAt: '2025-06-10' },
-  { id: 'closed_012', name: 'Waterfront Pavilion', result: 'lost', value: 540000, lossReason: 'Fee too high', proposalHours: 44, closedAt: '2025-05-20' },
+  { id: 'closed_001', name: 'Etobicoke Clinic', result: 'lost', value: 320000, lossReason: 'Fee too high', proposalHours: 35, closedAt: '2025-11-15', source: LeadChannel.GoogleAds },
+  { id: 'closed_002', name: 'Bloor St Retail Fitout', result: 'won', value: 195000, proposalHours: 28, closedAt: '2025-09-20', source: LeadChannel.Referral },
+  { id: 'closed_003', name: 'Mississauga Elementary School', result: 'lost', value: 850000, lossReason: 'Competitor selected', proposalHours: 42, closedAt: '2025-12-10', source: LeadChannel.Website },
+  { id: 'closed_004', name: 'High Park Residence', result: 'won', value: 275000, proposalHours: 18, closedAt: '2025-10-08', source: LeadChannel.Referral },
+  { id: 'closed_005', name: 'King West Condo Lobby', result: 'won', value: 180000, proposalHours: 22, closedAt: '2026-01-14', source: LeadChannel.Website },
+  { id: 'closed_006', name: 'Scarborough Office Park', result: 'lost', value: 420000, lossReason: 'Fee too high', proposalHours: 38, closedAt: '2026-02-20', source: LeadChannel.GoogleAds },
+  { id: 'closed_007', name: 'Danforth Duplex Conversion', result: 'won', value: 155000, proposalHours: 14, closedAt: '2026-03-01', source: LeadChannel.Referral },
+  { id: 'closed_008', name: 'North York Community Hub', result: 'lost', value: 680000, lossReason: 'No budget approved', proposalHours: 28, closedAt: '2026-01-30', source: LeadChannel.Website },
+  { id: 'closed_009', name: 'Liberty Village Cafe', result: 'won', value: 140000, proposalHours: 16, closedAt: '2025-08-22', source: LeadChannel.Instagram },
+  { id: 'closed_010', name: 'Corktown Townhouse', result: 'won', value: 220000, proposalHours: 20, closedAt: '2025-07-15', source: LeadChannel.Referral },
+  { id: 'closed_011', name: 'Midtown Health Clinic', result: 'won', value: 290000, proposalHours: 24, closedAt: '2025-06-10', source: LeadChannel.Referral },
+  { id: 'closed_012', name: 'Waterfront Pavilion', result: 'lost', value: 540000, lossReason: 'Fee too high', proposalHours: 44, closedAt: '2025-05-20', source: LeadChannel.Instagram },
 ]
 
 // ─── Pipeline Stage Velocity ──────────────────────────────────────────────────

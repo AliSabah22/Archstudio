@@ -116,6 +116,18 @@ export function PipelineView() {
   })
   const topLossReason = Object.entries(lossReasonCounts).sort((a, b) => b[1] - a[1])[0]
 
+  // Win rate by source
+  const bySource: Record<string, { won: number; total: number }> = {}
+  CLOSED_OPPORTUNITIES.forEach((o) => {
+    if (!o.source) return
+    if (!bySource[o.source]) bySource[o.source] = { won: 0, total: 0 }
+    bySource[o.source].total++
+    if (o.result === 'won') bySource[o.source].won++
+  })
+  const winRateBySource = Object.entries(bySource)
+    .map(([src, { won: w, total: t }]) => ({ src, won: w, total: t, rate: Math.round((w / t) * 100) }))
+    .sort((a, b) => b.rate - a.rate)
+
   return (
     <div className="p-8 flex flex-col" style={{ minHeight: '100%' }}>
       <PageHeader
@@ -215,6 +227,39 @@ export function PipelineView() {
                     {staleCount} stale
                   </div>
                 )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Win Rate by Source */}
+      <div className="rounded-card border border-border bg-surface p-5 mb-5">
+        <h3 className="font-serif text-sm text-text-primary mb-4">Win Rate by Source</h3>
+        <div className="flex flex-col gap-2">
+          {winRateBySource.map(({ src, won: w, total: t, rate }) => {
+            const cfg = SOURCE_CONFIG[src] ?? SOURCE_CONFIG['referral']
+            const barColor = rate >= 60 ? '#22C55E' : rate >= 40 ? '#F59E0B' : '#EF4444'
+            return (
+              <div key={src} className="flex items-center gap-3">
+                <div className="w-24 shrink-0">
+                  <span
+                    className="text-xs font-medium px-2 py-0.5 rounded"
+                    style={{ color: cfg.color, background: cfg.bg }}
+                  >
+                    {cfg.label}
+                  </span>
+                </div>
+                <div className="flex-1 h-1.5 rounded-full" style={{ background: '#1E1E20' }}>
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${rate}%`, background: barColor }}
+                  />
+                </div>
+                <div className="flex items-center gap-2 w-28 shrink-0 justify-end">
+                  <span className="text-xs font-mono font-semibold" style={{ color: barColor }}>{rate}%</span>
+                  <span className="text-xs text-text-muted">{w}W / {t - w}L</span>
+                </div>
               </div>
             )
           })}

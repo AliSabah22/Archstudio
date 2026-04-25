@@ -40,6 +40,7 @@ interface AppState {
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
   startTimer: (projectId: string, projectName: string, phase: string) => void
+  startTimerSafe: (projectId: string, projectName: string, phase: string) => void
   stopTimer: () => TimeEntry | null
   discardTimer: () => void
   addTimeEntry: (entry: Omit<TimeEntry, 'id'>) => void
@@ -75,6 +76,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   startTimer: (projectId, projectName, phase) =>
     set({ timer: { isRunning: true, projectId, projectName, phase, startTime: new Date() } }),
+  startTimerSafe: (projectId, projectName, phase) => {
+    const { timer, stopTimer, startTimer, showToast } = get()
+    if (timer.isRunning && timer.projectId !== projectId) {
+      const prevName = timer.projectName
+      const entry = stopTimer()
+      if (entry) {
+        const hrs = Math.round(entry.hours * 60)
+        showToast(`Saved ${hrs}m for ${prevName} — starting ${projectName}`)
+      }
+    }
+    startTimer(projectId, projectName, phase)
+  },
   stopTimer: () => {
     const { timer, timeEntries } = get()
     if (!timer.isRunning || !timer.startTime || !timer.projectId) return null

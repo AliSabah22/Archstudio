@@ -1,5 +1,5 @@
-import { AlertTriangle, Clock, FolderOpen, TrendingUp, DollarSign, Users } from 'lucide-react'
-import { PageHeader } from '@/design-system/layouts/PageHeader'
+import { useState } from 'react'
+import { AlertTriangle, Clock, FolderOpen, TrendingUp, DollarSign, Users, ChevronDown, ChevronUp } from 'lucide-react'
 import { StatCard } from '@/design-system/components/StatCard'
 import { ProgressBar } from '@/design-system/components/ProgressBar'
 import { StatusBadge } from '@/design-system/components/StatusBadge'
@@ -97,6 +97,10 @@ export function DashboardView() {
   const { allProjects } = useProjects()
   const { members, avgUtilization, totalBillableHours } = useTeam()
   const { financialSummary, allInvoices } = useInvoices()
+  const [expandTeam, setExpandTeam] = useState(false)
+  const [expandDeadlines, setExpandDeadlines] = useState(false)
+  const [expandTimesheets, setExpandTimesheets] = useState(false)
+  const [expandCashflow, setExpandCashflow] = useState(false)
 
   const activeProjects = allProjects.filter((p) => p.status === 'active')
   const overdueInvoices = allInvoices.filter((inv) => inv.status === InvoiceStatus.Overdue)
@@ -104,18 +108,15 @@ export function DashboardView() {
   const upcomingDeadlines = [...PROJECTS]
     .filter((p) => p.status === 'active')
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-    .slice(0, 4)
+    .slice(0, 5)
 
   const pipelineValue = 4_210_000
   const alerts = budgetAlerts()
   const pendingPassThrough = totalPendingPassThrough()
   const cf = cashFlowForecast()
 
-  const topClients = [...CLIENTS]
-    .sort((a, b) => ltvFor(b.id) - ltvFor(a.id))
-    .slice(0, 3)
+  const topClients = [...CLIENTS].sort((a, b) => ltvFor(b.id) - ltvFor(a.id)).slice(0, 3)
 
-  // Pipeline health
   const activeOpps = PIPELINE_OPPORTUNITIES
   const weightedValue = activeOpps.reduce((s, o) => s + o.estimatedValue * o.probability / 100, 0)
   const coverageRatio = weightedValue / 400_000
@@ -124,14 +125,109 @@ export function DashboardView() {
   const pipelineWinRate = Math.round((wonOpps.length / Math.max(CLOSED_OPPORTUNITIES.length, 1)) * 100)
   const coverageColor = coverageRatio >= 2 ? '#22C55E' : coverageRatio >= 1 ? '#F59E0B' : '#EF4444'
 
+  // ── Urgent item computation ───────────────────────────────────────────────
+  const burnoutMembers = members.filter((m) => m.trailingUtilization > 90)
+  const criticalAlerts = alerts.filter((a) => a.pct >= 100)
+  const overdueRFIs = RFIS.filter((r) => r.status === 'overdue')
+  const pendingApprovals = APPROVALS.filter((a) => a.status === 'pending')
+  const overdueActions = MEETINGS.flatMap((m) =>
+    m.actionItems.filter((a) => a.status !== 'completed' && a.dueDate < '2026-04-20').map((a) => ({ ...a, projectName: m.projectName }))
+  )
+
+  type UrgentItem = { level: 'red' | 'orange'; text: string; sub?: string; href: string }
+  const urgentItems: UrgentItem[] = [
+    ...overdueInvoices.map((inv) => ({
+      level: 'red' as const,
+      text: `Overdue invoice — ${inv.clientName}`,
+      sub: `${inv.number} · ${formatCurrency(inv.total)} · ${daysOverdue(inv.dueDate)}d past due`,
+      href: '/invoices',
+    })),
+    ...criticalAlerts.map((a) => ({
+      level: 'red' as const,
+      text: `Budget overrun — ${a.projectName}`,
+      sub: `${a.phase} phase at ${a.pct}% (+${a.over}h over budget)`,
+      href: '/projects',
+    })),
+    ...burnoutMembers.map((m) => ({
+      level: 'orange' as const,
+      text: `Burnout risk — ${m.name}`,
+      sub: `${m.trailingUtilization}% trailing utilization for 6+ consecutive weeks`,
+      href: '/team',
+    })),
+    ...overdueRFIs.map((r) => ({
+      level: 'red' as const,
+      text: `Overdue RFI — ${r.sentTo}`,
+      sub: `${r.subject} · ${r.projectName}`,
+      href: '/projects',
+    })),
+    ...pendingApprovals.map((a) => ({
+      level: 'orange' as const,
+      text: `Approval awaiting — ${a.projectName}`,
+      sub: a.title,
+      href: '/projects',
+    })),
+    ...overdueActions.map((a) => ({
+      level: 'orange' as const,
+      text: `Action item overdue — ${a.owner}`,
+      sub: `${a.task} · ${a.projectName}`,
+      href: '/projects',
+    })),
+  ]
+
+  const urgentCount = urgentItems.length
+  const hour = new Date().getHours()
+  const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening'
+  const greeting = urgentCount === 0
+    ? `Good ${timeOfDay}, Pamir. All systems green.`
+    : `Good ${timeOfDay}, Pamir. ${urgentCount} thing${urgentCount > 1 ? 's' : ''} need${urgentCount === 1 ? 's' : ''} your attention.`
+
   return (
     <div className="p-8">
-      <PageHeader
-        title="Command Center"
-        subtitle="ArchStudio Operations — Q2 2026"
-      />
 
-      {/* Top stat row */}
+      {/* TIER 1 — Greeting + urgent items */}
+      <div className="mb-7">
+        <div className="flex items-baseline gap-3 mb-4">
+          <h1 className="font-serif text-xl text-text-primary">{greeting}</h1>
+          <span className="text-xs text-text-muted">Mon, Apr 20, 2026</span>
+        </div>
+
+        {urgentItems.length > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            {urgentItems.map((item, i) => (
+              <a
+                key={i}
+                href={item.href}
+                className="flex items-start gap-3 px-4 py-2.5 rounded-button transition-opacity hover:opacity-80"
+                style={{
+                  background: item.level === 'red' ? 'rgba(239,68,68,0.06)' : 'rgba(245,158,11,0.06)',
+                  border: `1px solid ${item.level === 'red' ? 'rgba(239,68,68,0.22)' : 'rgba(245,158,11,0.22)'}`,
+                  borderLeft: `3px solid ${item.level === 'red' ? '#EF4444' : '#F59E0B'}`,
+                }}
+              >
+                <span style={{ color: item.level === 'red' ? '#EF4444' : '#F59E0B', fontSize: 9, marginTop: 3, flexShrink: 0 }}>●</span>
+                <div className="flex-1 min-w-0 flex items-baseline gap-2 flex-wrap">
+                  <span className="text-sm font-medium" style={{ color: item.level === 'red' ? '#F87171' : '#FCD34D' }}>
+                    {item.text}
+                  </span>
+                  {item.sub && (
+                    <span className="text-xs text-text-muted">{item.sub}</span>
+                  )}
+                </div>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div
+            className="flex items-center gap-2 px-4 py-3 rounded-button"
+            style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.18)' }}
+          >
+            <span style={{ color: '#22C55E', fontSize: 12 }}>✓</span>
+            <span className="text-sm" style={{ color: '#4ADE80' }}>All clear — no items require immediate attention.</span>
+          </div>
+        )}
+      </div>
+
+      {/* TIER 2 — Key Metrics */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <StatCard
           label="Active Projects"
@@ -236,12 +332,17 @@ export function DashboardView() {
 
           {/* Upcoming Deadlines */}
           <div className="rounded-card border border-border bg-surface p-5 flex-1">
-            <div className="flex items-center gap-2 mb-3">
-              <Clock className="w-4 h-4 text-text-muted" />
-              <h3 className="text-sm font-medium text-text-primary">Upcoming Deadlines</h3>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-text-muted" />
+                <h3 className="text-sm font-medium text-text-primary">Deadlines</h3>
+              </div>
+              <button onClick={() => setExpandDeadlines((v) => !v)} className="flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary transition-colors">
+                {expandDeadlines ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
             </div>
             <div className="flex flex-col gap-3">
-              {upcomingDeadlines.map((project) => {
+              {(expandDeadlines ? upcomingDeadlines : upcomingDeadlines.slice(0, 3)).map((project) => {
                 const days = daysUntil(project.dueDate)
                 const urgentColor = days <= 0 ? 'text-status-red' : days <= 14 ? 'text-status-amber' : 'text-text-muted'
                 return (
@@ -264,11 +365,23 @@ export function DashboardView() {
       {/* Team Capacity Widget */}
       <div className="rounded-card border border-border bg-surface p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-serif text-base text-text-primary">Team Capacity</h2>
-          <a href="/team" className="text-xs text-gold hover:underline">Full report</a>
+          <div>
+            <h2 className="font-serif text-base text-text-primary">Team Capacity</h2>
+            <span className="text-xs text-text-muted">{avgUtilization}% avg utilization · {totalBillableHours}h billable</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <a href="/capacity" className="text-xs text-gold hover:underline">Heatmap</a>
+            <button
+              onClick={() => setExpandTeam((v) => !v)}
+              className="flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary transition-colors"
+            >
+              {expandTeam ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              {expandTeam ? 'Less' : 'More'}
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-4 gap-4">
-          {members.slice(0, 8).map((member) => {
+          {members.slice(0, expandTeam ? 8 : 4).map((member) => {
             const isRed = member.utilization >= 90
             const isGreen = member.utilization >= 75 && member.utilization < 90
             const color = isRed ? '#EF4444' : isGreen ? '#22C55E' : '#F59E0B'
@@ -288,6 +401,14 @@ export function DashboardView() {
             )
           })}
         </div>
+        {!expandTeam && members.length > 4 && (
+          <button
+            onClick={() => setExpandTeam(true)}
+            className="mt-3 text-xs text-text-muted hover:text-text-secondary transition-colors w-full text-center"
+          >
+            +{members.length - 4} more team members
+          </button>
+        )}
       </div>
 
       {/* Row 3 — New Widgets */}
@@ -326,39 +447,48 @@ export function DashboardView() {
         <div className="rounded-card border border-border bg-surface p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-text-primary">Cash Flow Forecast</h3>
-            <a href="/invoices" className="text-xs text-gold hover:underline">View invoices</a>
+            <div className="flex items-center gap-3">
+              <a href="/invoices" className="text-xs text-gold hover:underline">View invoices</a>
+              <button onClick={() => setExpandCashflow((v) => !v)} className="flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary transition-colors">
+                {expandCashflow ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+            </div>
           </div>
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between py-2.5 px-3 rounded-button" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
-              <div>
-                <div className="text-xs text-text-muted">Next 30 days</div>
-                <div className="text-xs" style={{ color: '#22C55E' }}>Expected collection</div>
-              </div>
-              <div className="text-lg font-mono font-bold" style={{ color: '#22C55E' }}>{formatCurrency(cf.next30)}</div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-text-muted">Next 30 days</span>
+              <span className="text-xl font-mono font-bold" style={{ color: '#22C55E' }}>{formatCurrency(cf.next30)}</span>
             </div>
-            <div className="flex items-center justify-between py-2.5 px-3 rounded-button" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
-              <div>
-                <div className="text-xs text-text-muted">Next 60 days</div>
-                <div className="text-xs" style={{ color: '#60A5FA' }}>Including overdue (70%)</div>
-              </div>
-              <div className="text-lg font-mono font-bold" style={{ color: '#60A5FA' }}>{formatCurrency(cf.next60)}</div>
-            </div>
-            <div className="text-xs text-text-muted">
-              {overdueInvoices.length} invoice{overdueInvoices.length !== 1 ? 's' : ''} overdue — {formatCurrency(
-                overdueInvoices.reduce((s, inv) => s + inv.total, 0)
-              )} outstanding
-            </div>
+            {expandCashflow && (
+              <>
+                <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
+                  <span className="text-xs text-text-muted">Next 60 days (incl. overdue × 70%)</span>
+                  <span className="text-base font-mono font-semibold" style={{ color: '#60A5FA' }}>{formatCurrency(cf.next60)}</span>
+                </div>
+                <div className="text-xs text-text-muted">
+                  {overdueInvoices.length} invoice{overdueInvoices.length !== 1 ? 's' : ''} overdue — {formatCurrency(
+                    overdueInvoices.reduce((s, inv) => s + inv.total, 0)
+                  )} outstanding
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* Timesheet Compliance */}
         <div className="rounded-card border border-border bg-surface p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-text-primary">Timesheet Compliance</h3>
-            <span className="text-xs text-text-muted">Apr 14–20</span>
+            <div>
+              <h3 className="text-sm font-semibold text-text-primary">Timesheets</h3>
+              <span className="text-xs text-text-muted">Apr 14–20</span>
+            </div>
+            <button onClick={() => setExpandTimesheets((v) => !v)} className="flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary transition-colors">
+              {expandTimesheets ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              {expandTimesheets ? 'Less' : 'All'}
+            </button>
           </div>
           <div className="flex flex-col gap-2">
-            {TEAM_MEMBERS.map((m) => {
+            {(expandTimesheets ? TEAM_MEMBERS : TEAM_MEMBERS.slice(0, 4)).map((m) => {
               const hrs = weeklyHours(m.id)
               const color = hrs >= 32 ? '#22C55E' : hrs >= 24 ? '#F59E0B' : '#EF4444'
               return (

@@ -14,7 +14,8 @@ const EVENT_TYPE_CONFIG: Record<EventType, { color: string; bg: string; border: 
 }
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-const WEEK_DATES = ['2024-04-08', '2024-04-09', '2024-04-10', '2024-04-11', '2024-04-12']
+const WEEK_DATES = ['2026-04-20', '2026-04-21', '2026-04-22', '2026-04-23', '2026-04-24']
+const TODAY_DATE = '2026-04-20'
 
 function formatDayLabel(dateStr: string): string {
   const d = new Date(dateStr)
@@ -118,7 +119,7 @@ export function CalendarView() {
         {WEEK_DAYS.map((day, i) => {
           const dateStr = weekDates[i]
           const dayEvents = eventsForDate(dateStr)
-          const isToday = dateStr === '2024-04-08'
+          const isToday = dateStr === TODAY_DATE
 
           return (
             <div

@@ -28,6 +28,8 @@ export interface ProjectBudget {
   assumptions: string
   exclusions: string
   changeOrders: ChangeOrder[]
+  meetingsEstimated?: number
+  meetingsActual?: number
 }
 
 export interface ConsultantEntry {

@@ -28,4 +28,5 @@ export interface ClosedOpportunity {
   lossReason?: string
   proposalHours: number
   closedAt: string
+  source?: LeadChannel
 }

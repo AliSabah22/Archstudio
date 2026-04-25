@@ -18,24 +18,56 @@ import {
 import { SidebarItem } from '../components/SidebarItem'
 import { Avatar } from '../components/Avatar'
 import { useAppStore } from '@/stores/appStore'
+import { INVOICES } from '@/data/mockData'
+import { InvoiceStatus } from '@/types/common'
 
 interface AppShellProps {
   children: React.ReactNode
 }
 
-const NAV_ITEMS = [
-  { to: '/', icon: <LayoutDashboard className="w-4 h-4" />, label: 'Dashboard' },
-  { to: '/projects', icon: <FolderKanban className="w-4 h-4" />, label: 'Projects' },
-  { to: '/clients', icon: <UserCircle2 className="w-4 h-4" />, label: 'Clients' },
-  { to: '/pipeline', icon: <TrendingUp className="w-4 h-4" />, label: 'Pipeline' },
-  { to: '/team', icon: <Users className="w-4 h-4" />, label: 'Team' },
-  { to: '/capacity', icon: <Activity className="w-4 h-4" />, label: 'Capacity' },
-  { to: '/invoices', icon: <FileText className="w-4 h-4" />, label: 'Invoices', badgeCount: 3 },
-  { to: '/financials', icon: <BarChart3 className="w-4 h-4" />, label: 'Financials' },
-  { to: '/estimates', icon: <Calculator className="w-4 h-4" />, label: 'Estimates' },
-  { to: '/calendar', icon: <Calendar className="w-4 h-4" />, label: 'Calendar' },
-  { to: '/marketing', icon: <Megaphone className="w-4 h-4" />, label: 'Marketing' },
-  { to: '/settings', icon: <Settings className="w-4 h-4" />, label: 'Settings' },
+interface NavGroup {
+  label?: string
+  items: { to: string; icon: React.ReactNode; label: string; badgeCount?: number }[]
+}
+
+const overdueInvoiceCount = INVOICES.filter((inv) => inv.status === InvoiceStatus.Overdue).length
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    items: [
+      { to: '/', icon: <LayoutDashboard className="w-4 h-4" />, label: 'Dashboard' },
+    ],
+  },
+  {
+    label: 'Work',
+    items: [
+      { to: '/projects', icon: <FolderKanban className="w-4 h-4" />, label: 'Projects' },
+      { to: '/pipeline', icon: <TrendingUp className="w-4 h-4" />, label: 'Pipeline' },
+      { to: '/estimates', icon: <Calculator className="w-4 h-4" />, label: 'Estimates' },
+    ],
+  },
+  {
+    label: 'People',
+    items: [
+      { to: '/clients', icon: <UserCircle2 className="w-4 h-4" />, label: 'Clients' },
+      { to: '/team', icon: <Users className="w-4 h-4" />, label: 'Team' },
+      { to: '/capacity', icon: <Activity className="w-4 h-4" />, label: 'Capacity' },
+    ],
+  },
+  {
+    label: 'Financials',
+    items: [
+      { to: '/invoices', icon: <FileText className="w-4 h-4" />, label: 'Invoices', badgeCount: overdueInvoiceCount > 0 ? overdueInvoiceCount : undefined },
+      { to: '/financials', icon: <BarChart3 className="w-4 h-4" />, label: 'Financials' },
+    ],
+  },
+  {
+    label: 'Operations',
+    items: [
+      { to: '/calendar', icon: <Calendar className="w-4 h-4" />, label: 'Calendar' },
+      { to: '/marketing', icon: <Megaphone className="w-4 h-4" />, label: 'Marketing' },
+    ],
+  },
 ]
 
 function formatElapsed(ms: number): string {
@@ -223,17 +255,39 @@ export function AppShell({ children }: AppShellProps) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 flex flex-col gap-1 px-3 py-4 overflow-y-auto">
-          {NAV_ITEMS.map((item) => (
-            <SidebarItem
-              key={item.to}
-              to={item.to}
-              icon={item.icon}
-              label={item.label}
-              badgeCount={item.badgeCount}
-            />
+        <nav className="flex-1 flex flex-col px-3 py-3 overflow-y-auto">
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={gi}>
+              {gi > 0 && (
+                <div className="mt-3 mb-1 mx-1 border-t border-border" />
+              )}
+              {group.label && (
+                <div
+                  className="px-2 pb-1 pt-2"
+                  style={{ fontSize: 10, fontWeight: 700, color: '#5A5A60', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+                >
+                  {group.label}
+                </div>
+              )}
+              <div className="flex flex-col gap-0.5">
+                {group.items.map((item) => (
+                  <SidebarItem
+                    key={item.to}
+                    to={item.to}
+                    icon={item.icon}
+                    label={item.label}
+                    badgeCount={item.badgeCount}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
+
+        {/* Settings — always at bottom */}
+        <div className="border-t border-border px-3 pt-2 pb-1">
+          <SidebarItem to="/settings" icon={<Settings className="w-4 h-4" />} label="Settings" />
+        </div>
 
         {/* User profile */}
         <div className="border-t border-border px-3 py-4">

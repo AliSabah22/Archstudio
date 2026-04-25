@@ -147,12 +147,55 @@ const APPROVAL_STATUS_CONFIG = {
   approved_with_conditions: { color: '#3B82F6', label: 'Approved w/ Conditions' },
 }
 
-function MeetingsTab({ meetings, projectId }: { meetings: Meeting[]; projectId: string }) {
+function MeetingsTab({ meetings: initialMeetings, projectId }: { meetings: Meeting[]; projectId: string }) {
+  const [localMeetings, setLocalMeetings] = useState(initialMeetings)
   const [searchTerm, setSearchTerm] = useState('')
   const [searchMode, setSearchMode] = useState(false)
-  const projectMeetings = meetings.filter((m) => m.projectId === projectId)
+  const [showNewForm, setShowNewForm] = useState(false)
+  const [formDate, setFormDate] = useState(TODAY)
+  const [formTime, setFormTime] = useState('10:00 AM')
+  const [formType, setFormType] = useState<keyof typeof MEETING_TYPE_CONFIG>('Client Review')
+  const [formAttendees, setFormAttendees] = useState('')
+  const [formTopics, setFormTopics] = useState('')
+  const [formDecisions, setFormDecisions] = useState('')
+  const [formNotes, setFormNotes] = useState('')
+  const { showToast } = useAppStore()
+
+  const projectMeetings = localMeetings.filter((m) => m.projectId === projectId)
   const allDecisions = projectMeetings.flatMap((m) => m.decisions.map((d) => ({ ...d, meetingDate: m.date, meetingType: m.type })))
   const pendingActions = projectMeetings.flatMap((m) => m.actionItems).filter((a) => a.status !== 'completed')
+
+  const handleSaveMeeting = () => {
+    const topics = formTopics.split('\n').map((t) => t.trim()).filter(Boolean)
+    const decisions = formDecisions.split('\n').map((d, i) => ({ id: Date.now() + i, text: d.trim(), category: 'Design' as const })).filter((d) => d.text)
+    const newMeeting: Meeting = {
+      id: Date.now(),
+      projectId,
+      projectName: '',
+      date: formDate,
+      time: formTime,
+      type: formType,
+      durationMinutes: 60,
+      attendees: {
+        internal: ['PD'],
+        external: formAttendees.split(',').map((a) => a.trim()).filter(Boolean),
+      },
+      topics: topics.length > 0 ? topics : ['General discussion'],
+      decisions,
+      actionItems: [],
+      notes: formNotes,
+    }
+    setLocalMeetings((prev) => [...prev, newMeeting])
+    showToast('Meeting saved ✓')
+    setShowNewForm(false)
+    setFormDate(TODAY)
+    setFormTime('10:00 AM')
+    setFormType('Client Review')
+    setFormAttendees('')
+    setFormTopics('')
+    setFormDecisions('')
+    setFormNotes('')
+  }
 
   if (searchMode) {
     const filtered = allDecisions.filter(
@@ -205,11 +248,69 @@ function MeetingsTab({ meetings, projectId }: { meetings: Meeting[]; projectId: 
           >
             Search Decisions
           </button>
-          <button className="px-3 py-1 rounded-button text-xs transition-colors" style={{ background: 'rgba(200,169,126,0.1)', border: '1px solid rgba(200,169,126,0.2)', color: '#C8A97E' }}>
-            + New Meeting
+          <button
+            onClick={() => setShowNewForm((v) => !v)}
+            className="px-3 py-1 rounded-button text-xs transition-colors"
+            style={{ background: showNewForm ? 'rgba(200,169,126,0.25)' : 'rgba(200,169,126,0.1)', border: '1px solid rgba(200,169,126,0.3)', color: '#C8A97E' }}
+          >
+            {showNewForm ? '✕ Cancel' : '+ New Meeting'}
           </button>
         </div>
       </div>
+
+      {/* New Meeting inline form */}
+      {showNewForm && (
+        <div className="mb-5 p-4 rounded-card border" style={{ border: '1px solid rgba(200,169,126,0.2)', background: 'rgba(200,169,126,0.02)' }}>
+          <div className="text-xs font-semibold text-text-primary mb-3">New Meeting</div>
+          <div className="grid grid-cols-3 gap-3 mb-3">
+            <div>
+              <label className="text-xs text-text-muted block mb-1">Date</label>
+              <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)}
+                className="w-full px-2 py-1.5 rounded text-xs bg-bg border border-border text-text-primary focus:outline-none focus:border-gold/50" />
+            </div>
+            <div>
+              <label className="text-xs text-text-muted block mb-1">Time</label>
+              <input type="text" value={formTime} onChange={(e) => setFormTime(e.target.value)} placeholder="10:00 AM"
+                className="w-full px-2 py-1.5 rounded text-xs bg-bg border border-border text-text-primary focus:outline-none focus:border-gold/50" />
+            </div>
+            <div>
+              <label className="text-xs text-text-muted block mb-1">Type</label>
+              <select value={formType} onChange={(e) => setFormType(e.target.value as keyof typeof MEETING_TYPE_CONFIG)}
+                className="w-full px-2 py-1.5 rounded text-xs bg-bg border border-border text-text-secondary focus:outline-none focus:border-gold/50">
+                {Object.keys(MEETING_TYPE_CONFIG).map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="mb-3">
+            <label className="text-xs text-text-muted block mb-1">External attendees (comma-separated)</label>
+            <input type="text" value={formAttendees} onChange={(e) => setFormAttendees(e.target.value)} placeholder="Chen Structural, MEP Associates..."
+              className="w-full px-2 py-1.5 rounded text-xs bg-bg border border-border text-text-primary focus:outline-none focus:border-gold/50" />
+          </div>
+          <div className="mb-3">
+            <label className="text-xs text-text-muted block mb-1">Topics discussed (one per line)</label>
+            <textarea value={formTopics} onChange={(e) => setFormTopics(e.target.value)} rows={3} placeholder="Foundation design&#10;MEP coordination&#10;Structural review"
+              className="w-full px-2 py-1.5 rounded text-xs bg-bg border border-border text-text-primary focus:outline-none focus:border-gold/50 resize-none" />
+          </div>
+          <div className="mb-3">
+            <label className="text-xs text-text-muted block mb-1">Decisions made (one per line)</label>
+            <textarea value={formDecisions} onChange={(e) => setFormDecisions(e.target.value)} rows={2} placeholder="Skylight locations confirmed&#10;Material palette approved"
+              className="w-full px-2 py-1.5 rounded text-xs bg-bg border border-border text-text-primary focus:outline-none focus:border-gold/50 resize-none" />
+          </div>
+          <div className="mb-4">
+            <label className="text-xs text-text-muted block mb-1">Notes</label>
+            <textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} placeholder="Additional context..."
+              className="w-full px-2 py-1.5 rounded text-xs bg-bg border border-border text-text-primary focus:outline-none focus:border-gold/50 resize-none" />
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handleSaveMeeting}
+              className="px-4 py-1.5 rounded-button text-xs font-semibold transition-all"
+              style={{ background: 'rgba(200,169,126,0.2)', border: '1px solid rgba(200,169,126,0.3)', color: '#C8A97E' }}>
+              Save Meeting
+            </button>
+            <button onClick={() => setShowNewForm(false)} className="text-xs text-text-muted hover:text-text-primary transition-colors">Cancel</button>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col gap-3">
         {projectMeetings.sort((a, b) => b.date.localeCompare(a.date)).map((meeting) => {
           const typeConfig = MEETING_TYPE_CONFIG[meeting.type]
@@ -580,7 +681,7 @@ function ProjectDetailPanel({ project, onClose }: { project: Project; onClose: (
   const [showDetails, setShowDetails] = useState(false)
   const [activity, setActivity] = useState('')
   const [activeTab, setActiveTab] = useState<DetailTab>('budget')
-  const { startTimer, addTimeEntry, showToast } = useAppStore()
+  const { startTimerSafe, addTimeEntry, showToast } = useAppStore()
 
   const budget = project.projectBudget
   const fin = project.financials
@@ -658,7 +759,7 @@ function ProjectDetailPanel({ project, onClose }: { project: Project; onClose: (
             </button>
           ) : null}
           <button
-            onClick={() => startTimer(project.id, project.name, phaseName)}
+            onClick={() => startTimerSafe(project.id, project.name, phaseName)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-button text-xs font-medium transition-all"
             style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#EF4444' }}
           >
@@ -756,6 +857,23 @@ function ProjectDetailPanel({ project, onClose }: { project: Project; onClose: (
                     <div className="text-xs text-text-secondary space-y-2 p-3 rounded-button" style={{ background: '#0A0A0B' }}>
                       <div><span className="text-text-muted font-medium">Includes: </span>{budget.assumptions}</div>
                       <div><span className="text-text-muted font-medium">Excludes: </span>{budget.exclusions}</div>
+                    </div>
+                  )}
+                  {budget.meetingsEstimated !== undefined && (
+                    <div
+                      className="flex items-center justify-between py-2 px-3 rounded-button mt-3"
+                      style={{
+                        background: (budget.meetingsActual ?? 0) > budget.meetingsEstimated ? 'rgba(239,68,68,0.07)' : 'rgba(200,169,126,0.05)',
+                        border: `1px solid ${(budget.meetingsActual ?? 0) > budget.meetingsEstimated ? 'rgba(239,68,68,0.2)' : 'rgba(200,169,126,0.15)'}`,
+                      }}
+                    >
+                      <span className="text-xs text-text-muted">Meetings</span>
+                      <span
+                        className="text-xs font-mono font-semibold"
+                        style={{ color: (budget.meetingsActual ?? 0) > budget.meetingsEstimated ? '#EF4444' : '#22C55E' }}
+                      >
+                        {budget.meetingsActual} of {budget.meetingsEstimated} estimated ({Math.round(((budget.meetingsActual ?? 0) / budget.meetingsEstimated) * 100)}%)
+                      </span>
                     </div>
                   )}
                   {budget.changeOrders.length > 0 && (
@@ -892,13 +1010,225 @@ function ProjectDetailPanel({ project, onClose }: { project: Project; onClose: (
   )
 }
 
+function ProjectCard({
+  project,
+  isSelected,
+  onCardClick,
+}: {
+  project: Project
+  isSelected: boolean
+  onCardClick: (id: string) => void
+}) {
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
+  const [quickHours, setQuickHours] = useState('1')
+  const [quickActivity, setQuickActivity] = useState('')
+  const [showDetails, setShowDetails] = useState(false)
+  const { startTimerSafe, addTimeEntry, showToast } = useAppStore()
+
+  const budgetPct = Math.round((project.spent / project.budget) * 100)
+  const priorityColor = PRIORITY_COLORS[project.priority]
+  const health = healthScore(project)
+  const phaseName = PHASE_LABELS[project.phase] ?? project.phase
+
+  const handleSaveQuick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const hrs = parseFloat(quickHours)
+    if (isNaN(hrs) || hrs <= 0) return
+    addTimeEntry({
+      userId: 'tm_001',
+      projectId: project.id,
+      phase: project.phase,
+      hours: hrs,
+      date: TODAY,
+      activity: quickActivity || 'Manual Entry',
+      note: '',
+      billable: true,
+    })
+    showToast(`${hrs}h logged to ${project.name} ✓`)
+    setQuickAddOpen(false)
+    setQuickHours('1')
+    setQuickActivity('')
+    setShowDetails(false)
+  }
+
+  return (
+    <div
+      onClick={() => !quickAddOpen && onCardClick(project.id)}
+      className="rounded-card border bg-surface hover:border-gold/30 transition-all cursor-pointer group relative"
+      style={{ borderColor: isSelected ? 'rgba(200,169,126,0.4)' : '#1E1E20' }}
+    >
+      <div className="p-5">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <div
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: priorityColor }}
+                title={`${project.priority} priority`}
+              />
+              <h3 className="text-sm font-semibold text-text-primary truncate group-hover:text-gold transition-colors">
+                {project.name}
+              </h3>
+            </div>
+            <p className="text-xs text-text-muted truncate">{project.clientName}</p>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <StatusBadge status={project.status} />
+            <span className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{ background: health.bg, color: health.color }}>
+              {health.label}
+            </span>
+          </div>
+        </div>
+
+        {/* Type + Phase */}
+        <div className="flex items-center gap-2 mb-4">
+          <StatusBadge status={project.type} />
+          <StatusBadge status={project.phase} />
+        </div>
+
+        {/* Progress */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-text-muted">Progress</span>
+            <span className="text-xs font-mono text-text-secondary">{project.progress}%</span>
+          </div>
+          <ProgressBar value={project.progress} height={5} color="#C8A97E" />
+        </div>
+
+        {/* Budget */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-text-muted">Budget</span>
+            <span className={`text-xs font-mono ${budgetPct > 90 ? 'text-status-red' : budgetPct > 75 ? 'text-status-amber' : 'text-text-secondary'}`}>
+              {formatCurrency(project.spent)} / {formatCurrency(project.budget)}
+            </span>
+          </div>
+          <ProgressBar
+            value={budgetPct}
+            height={4}
+            color={budgetPct > 90 ? '#EF4444' : budgetPct > 75 ? '#F59E0B' : '#22C55E'}
+          />
+        </div>
+
+        {/* P&L quick stat */}
+        {project.financials && (
+          <div className="mb-3 flex items-center justify-between py-2 px-2.5 rounded" style={{ background: '#0A0A0B' }}>
+            <span className="text-xs text-text-muted">Margin</span>
+            <span
+              className="text-xs font-mono font-semibold"
+              style={{ color: project.financials.marginPercent >= 20 ? '#22C55E' : project.financials.marginPercent >= 10 ? '#F59E0B' : '#EF4444' }}
+            >
+              {project.financials.marginPercent.toFixed(1)}%
+            </span>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-3 border-t border-border">
+          <div>
+            <div className="text-xs text-text-muted">Due</div>
+            <div className="text-xs font-mono text-text-secondary">{formatDate(project.dueDate)}</div>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* + Time button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setQuickAddOpen((v) => !v)
+              }}
+              title="Log time"
+              className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
+              style={{ background: 'rgba(200,169,126,0.15)', color: '#C8A97E', border: '1px solid rgba(200,169,126,0.3)' }}
+            >
+              + Time
+            </button>
+            {/* Start timer button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                startTimerSafe(project.id, project.name, phaseName)
+              }}
+              title="Start timer"
+              className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center w-6 h-6 rounded-full text-xs"
+              style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.25)' }}
+            >
+              ▶
+            </button>
+            <AvatarStack members={project.members} size="sm" max={3} />
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Add inline form */}
+      {quickAddOpen && (
+        <div
+          className="px-4 pb-4 border-t border-border"
+          style={{ background: 'rgba(200,169,126,0.03)' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="pt-3 flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-text-muted">Hours:</span>
+            <input
+              type="number"
+              min="0.25"
+              step="0.25"
+              value={quickHours}
+              onChange={(e) => setQuickHours(e.target.value)}
+              autoFocus
+              className="w-14 px-2 py-1 rounded text-xs font-mono text-text-primary bg-bg border border-border focus:outline-none focus:border-gold/50"
+            />
+            <button
+              onClick={() => setShowDetails((v) => !v)}
+              className="text-xs text-text-muted hover:text-gold transition-colors"
+            >
+              {showDetails ? '▲' : '▼'} details
+            </button>
+          </div>
+          {showDetails && (
+            <div className="mt-2">
+              <select
+                value={quickActivity}
+                onChange={(e) => setQuickActivity(e.target.value)}
+                className="w-full px-2 py-1 rounded text-xs text-text-secondary bg-bg border border-border focus:outline-none focus:border-gold/50"
+              >
+                <option value="">Activity (optional)</option>
+                <option value="Drawing Production">Drawing Production</option>
+                <option value="Client Meeting">Client Meeting</option>
+                <option value="Coordination">Coordination</option>
+                <option value="Site Visit">Site Visit</option>
+                <option value="Design Review">Design Review</option>
+                <option value="Administration">Administration</option>
+              </select>
+            </div>
+          )}
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={handleSaveQuick}
+              className="px-3 py-1 rounded-button text-xs font-semibold transition-all"
+              style={{ background: 'rgba(200,169,126,0.2)', border: '1px solid rgba(200,169,126,0.3)', color: '#C8A97E' }}
+            >
+              Save
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setQuickAddOpen(false) }}
+              className="text-xs text-text-muted hover:text-text-primary transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function ProjectsView() {
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all')
   const [phaseFilter, setPhaseFilter] = useState<ProjectPhase | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState<ProjectType | 'all'>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const { allProjects, projectsByPhase } = useProjects()
-  const { startTimer } = useAppStore()
 
   const filtered = allProjects.filter((p) => {
     if (statusFilter !== 'all' && p.status !== statusFilter) return false
@@ -978,111 +1308,14 @@ export function ProjectsView() {
 
       {/* Project Grid */}
       <div className="grid grid-cols-3 gap-4">
-        {filtered.map((project) => {
-          const budgetPct = Math.round((project.spent / project.budget) * 100)
-          const priorityColor = PRIORITY_COLORS[project.priority]
-          const health = healthScore(project)
-          const isSelected = selectedId === project.id
-          const phaseName = PHASE_LABELS[project.phase] ?? project.phase
-
-          return (
-            <div
-              key={project.id}
-              onClick={() => handleCardClick(project.id)}
-              className="rounded-card border bg-surface p-5 hover:border-gold/30 transition-all cursor-pointer group relative"
-              style={{ borderColor: isSelected ? 'rgba(200,169,126,0.4)' : '#1E1E20' }}
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: priorityColor }}
-                      title={`${project.priority} priority`}
-                    />
-                    <h3 className="text-sm font-semibold text-text-primary truncate group-hover:text-gold transition-colors">
-                      {project.name}
-                    </h3>
-                  </div>
-                  <p className="text-xs text-text-muted truncate">{project.clientName}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <StatusBadge status={project.status} />
-                  <span className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{ background: health.bg, color: health.color }}>
-                    {health.label}
-                  </span>
-                </div>
-              </div>
-
-              {/* Type + Phase */}
-              <div className="flex items-center gap-2 mb-4">
-                <StatusBadge status={project.type} />
-                <StatusBadge status={project.phase} />
-              </div>
-
-              {/* Progress */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-text-muted">Progress</span>
-                  <span className="text-xs font-mono text-text-secondary">{project.progress}%</span>
-                </div>
-                <ProgressBar value={project.progress} height={5} color="#C8A97E" />
-              </div>
-
-              {/* Budget */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-text-muted">Budget</span>
-                  <span className={`text-xs font-mono ${budgetPct > 90 ? 'text-status-red' : budgetPct > 75 ? 'text-status-amber' : 'text-text-secondary'}`}>
-                    {formatCurrency(project.spent)} / {formatCurrency(project.budget)}
-                  </span>
-                </div>
-                <ProgressBar
-                  value={budgetPct}
-                  height={4}
-                  color={budgetPct > 90 ? '#EF4444' : budgetPct > 75 ? '#F59E0B' : '#22C55E'}
-                />
-              </div>
-
-              {/* P&L quick stat */}
-              {project.financials && (
-                <div className="mb-3 flex items-center justify-between py-2 px-2.5 rounded" style={{ background: '#0A0A0B' }}>
-                  <span className="text-xs text-text-muted">Margin</span>
-                  <span
-                    className="text-xs font-mono font-semibold"
-                    style={{ color: project.financials.marginPercent >= 20 ? '#22C55E' : project.financials.marginPercent >= 10 ? '#F59E0B' : '#EF4444' }}
-                  >
-                    {project.financials.marginPercent.toFixed(1)}%
-                  </span>
-                </div>
-              )}
-
-              {/* Footer */}
-              <div className="flex items-center justify-between pt-3 border-t border-border">
-                <div>
-                  <div className="text-xs text-text-muted">Due</div>
-                  <div className="text-xs font-mono text-text-secondary">{formatDate(project.dueDate)}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Start timer button — visible on hover */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      startTimer(project.id, project.name, phaseName)
-                    }}
-                    title="Start timer"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center w-6 h-6 rounded-full text-xs"
-                    style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.25)' }}
-                  >
-                    ▶
-                  </button>
-                  <AvatarStack members={project.members} size="sm" max={3} />
-                </div>
-              </div>
-            </div>
-          )
-        })}
+        {filtered.map((project) => (
+          <ProjectCard
+            key={project.id}
+            project={project}
+            isSelected={selectedId === project.id}
+            onCardClick={handleCardClick}
+          />
+        ))}
       </div>
 
       {/* Detail Panel */}
